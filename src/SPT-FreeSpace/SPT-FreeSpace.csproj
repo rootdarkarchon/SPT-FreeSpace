@@ -1,0 +1,81 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <AssemblyName>SPT-FreeSpace</AssemblyName>
+    <RootNamespace>SPTFreeSpace</RootNamespace>
+    <Version>1.0.0</Version>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <FileVersion>1.0.0.0</FileVersion>
+    <Deterministic>true</Deterministic>
+    <DebugType>portable</DebugType>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <SPTPath Condition="'$(SPTPath)' == ''">$(SPT_ROOT)</SPTPath>
+    <ManagedRoot>$(SPTPath)\EscapeFromTarkov_Data\Managed</ManagedRoot>
+    <BepInExCoreRoot>$(SPTPath)\BepInEx\core</BepInExCoreRoot>
+  </PropertyGroup>
+
+  <Target Name="ValidateSPTPath" BeforeTargets="ResolveAssemblyReferences">
+    <Error Condition="'$(SPTPath)' == ''"
+           Text="Set SPTPath or SPT_ROOT to the exact SPT 4.0.13 / EFT 0.16.9.0.40087 installation." />
+    <Error Condition="!Exists('$(SPTPath)\EscapeFromTarkov.exe')"
+           Text="SPTPath does not contain EscapeFromTarkov.exe: $(SPTPath)" />
+    <Error Condition="!Exists('$(ManagedRoot)\Assembly-CSharp.dll')"
+           Text="Required EFT client assembly is missing: $(ManagedRoot)\Assembly-CSharp.dll" />
+    <Error Condition="!Exists('$(BepInExCoreRoot)\BepInEx.dll')"
+           Text="Required BepInEx assembly is missing: $(BepInExCoreRoot)\BepInEx.dll" />
+    <Error Condition="!Exists('$(BepInExCoreRoot)\0Harmony.dll')"
+           Text="Required Harmony assembly is missing: $(BepInExCoreRoot)\0Harmony.dll" />
+    <Error Condition="!Exists('$(SPTPath)\BepInEx\plugins\spt\spt-core.dll')"
+           Text="Required SPT 4.0 client core is missing: $(SPTPath)\BepInEx\plugins\spt\spt-core.dll" />
+    <Error Condition="!Exists('$(ManagedRoot)\UnityEngine.dll')"
+           Text="Required Unity facade is missing: $(ManagedRoot)\UnityEngine.dll" />
+    <Error Condition="!Exists('$(ManagedRoot)\UnityEngine.CoreModule.dll')"
+           Text="Required Unity core module is missing: $(ManagedRoot)\UnityEngine.CoreModule.dll" />
+    <Error Condition="!Exists('$(ManagedRoot)\UnityEngine.UI.dll')"
+           Text="Required Unity UI assembly is missing: $(ManagedRoot)\UnityEngine.UI.dll" />
+    <Error Condition="!Exists('$(ManagedRoot)\UnityEngine.UIModule.dll')"
+           Text="Required Unity UI module is missing: $(ManagedRoot)\UnityEngine.UIModule.dll" />
+    <Error Condition="!Exists('$(ManagedRoot)\Unity.TextMeshPro.dll')"
+           Text="Required TextMeshPro assembly is missing: $(ManagedRoot)\Unity.TextMeshPro.dll" />
+  </Target>
+
+  <ItemGroup>
+    <Reference Include="0Harmony">
+      <HintPath>$(BepInExCoreRoot)\0Harmony.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Assembly-CSharp">
+      <HintPath>$(ManagedRoot)\Assembly-CSharp.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="BepInEx">
+      <HintPath>$(BepInExCoreRoot)\BepInEx.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine">
+      <HintPath>$(ManagedRoot)\UnityEngine.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.CoreModule">
+      <HintPath>$(ManagedRoot)\UnityEngine.CoreModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.UI">
+      <HintPath>$(ManagedRoot)\UnityEngine.UI.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.UIModule">
+      <HintPath>$(ManagedRoot)\UnityEngine.UIModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Unity.TextMeshPro">
+      <HintPath>$(ManagedRoot)\Unity.TextMeshPro.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+</Project>

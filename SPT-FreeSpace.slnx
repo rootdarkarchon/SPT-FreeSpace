@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="src/SPT-FreeSpace/SPT-FreeSpace.csproj" />
+  <Project Path="tests/SPT-FreeSpace.Tests/SPT-FreeSpace.Tests.csproj" />
+</Solution>
