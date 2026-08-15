@@ -37,8 +37,11 @@ Use at least:
 | A2 | Open stash | Eligible player-owned container tiles show one overlay each |
 | A3 | Inspect ordinary non-container items | No overlay |
 | A4 | Close and reopen stash five times | No duplicate overlay objects or duplicated text |
-| A5 | Change UI scale/resolution if available | Overlay remains anchored inside the tile |
+| A5 | Change UI scale/resolution if available | Overlay remains anchored inside the tile at top-left |
 | A6 | Hover, click, drag, and context-click a container | Input behavior is unchanged |
+| A7 | View an untagged container | Counter uses the top-left inset |
+| A8 | Add a one-line or wrapped tag to the same container | Counter moves immediately below the visible tag without overlap |
+| A9 | Compare the counter to native item text | Counter is visibly about 2 points smaller than the previous 12-point build and remains legible |
 
 ## B. Basic arithmetic
 
@@ -52,6 +55,11 @@ Use at least:
 | B6 | Remove all items | Returns to `0/N` within the configured interval |
 | B7 | Change Display mode to `AvailableTotal` while the empty container remains visible | Existing overlay changes to `N/N` within the configured interval |
 | B8 | Add an item occupying 1 cell in `AvailableTotal` mode | `(N-1)/N` |
+| B9 | Enable `Fullness color scale`, then view an empty container | Counter is green |
+| B10 | Fill the same container to approximately 50% | Counter passes through yellow at the midpoint |
+| B11 | Fill the same container completely | Counter is red |
+| B12 | Switch between `UsedTotal` and `AvailableTotal` without changing contents | Number changes mode; color does not change |
+| B13 | Disable `Fullness color scale` | Counter returns to white within the configured interval |
 
 ## C. Recursive semantics
 
@@ -60,15 +68,17 @@ directly with the recursive available-capacity formula.
 
 | ID | Setup/action | Expected |
 |---|---|---|
-| C1 | Put an empty child container inside an empty parent | Parent displays full net usable capacity, not partially used gross capacity |
+| C1 | With `Count nested containers as used space` enabled, put an empty child container inside an empty parent | Parent total includes all parent and child grid cells; used includes the child's parent-grid footprint |
 | C2 | Put ordinary items in the child | Parent and child available counts both decrease correctly |
 | C3 | Add a grandchild container | Parent, child, and grandchild show their own recursive totals |
 | C4 | Move an item from parent into child | Parent aggregate available remains unchanged when footprint is equal and placement succeeds |
 | C5 | Move the child container to another parent | Old parent, new parent, and child update |
 | C6 | Remove the child from the hierarchy | Parent total drops by the child's net contribution and releases its parent footprint |
 | C7 | Use two sibling child containers | Both contributions are included exactly once |
+| C8 | Disable `Count nested containers as used space` while the hierarchy remains visible | Total drops by the sum of nested-container footprints; available is unchanged and used decreases by the same amount |
+| C9 | Re-enable the setting | Default footprint-counted total and used values return within the configured interval |
 
-For C1, verify the formula manually:
+For C8, verify the disabled/original formula manually:
 
 ```text
 parent total grid cells
@@ -86,6 +96,7 @@ parent total grid cells
 | D4 | Open three container windows | No missing or duplicate overlays |
 | D5 | Sort an opened container | Values remain correct after sorting |
 | D6 | Close windows in different orders | No stale references, exceptions, or orphan UI |
+| D7 | In a standalone container window, inspect an untagged and tagged nested container | Both show their own values at the correct top-left/tag-relative position |
 
 ## E. Ownership filtering
 
@@ -121,6 +132,8 @@ parent total grid cells
 | G3 | Tagged container | Tag and free-space text remain legible |
 | G4 | Value/tooltip mod enabled | No tooltip/input regression |
 | G5 | Fika client enabled | No network/session error; feature remains local |
+| G6 | Fold an empty Foldables backpack/vest that is inside another container | Folded tile hides its counter; parent retains the folded item's footprint but excludes its internal capacity |
+| G7 | Unfold the same item without reopening the screen | Its counter returns and the parent total includes its recursive capacity within the configured interval |
 
 ## H. Performance and logs
 
@@ -147,13 +160,15 @@ parent total grid cells
 Completed without launching EFT:
 
 - exact installed 40087 ABI/signature mapping and target-resolution guard;
-- 17/17 recursive formula, cycle, depth, memoization, rotation, multi-grid,
-  sibling, malformed-state, and display-mode unit tests;
+- 28/28 build-version, recursive formula, cycle, depth, memoization, rotation, multi-grid,
+  sibling, malformed-state, folded-child, display-mode, and fullness-color unit
+  tests, including both nested-container footprint policies;
 - clean Release solution build with 0 warnings and 0 errors;
 - client-only dependency and source scan: no server project, route, network,
   profile, or inventory-mutation implementation;
 - static coexistence inspection with installed UI Fixes `5.3.11`,
-  MoreCheckmarks `2.2.0`, and Fika `2.3.9`;
+  MoreCheckmarks `2.2.0`, Fika `2.3.9`, and official Foldables `1.0.3`
+  source commit `6a954353f396eee8830a5112181b1bbc5a20d609`;
 - one-file ZIP layout and SHA-256 verification.
 
 All checks in sections A through H exercise live Unity/EFT behavior and remain

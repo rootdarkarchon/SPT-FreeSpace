@@ -5,17 +5,28 @@ param(
 
     [Parameter()]
     [ValidateSet('Release')]
-    [string] $Configuration = 'Release'
+    [string] $Configuration = 'Release',
+
+    [Parameter()]
+    [string] $Version = '1.0.0'
 )
 
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
-$version = '1.0.0'
 $expectedEftFileVersion = '0.16.9.40087'
 $expectedSptAssemblyVersion = [Version] '4.0.13.0'
 $repoRoot = [IO.Path]::GetFullPath((Split-Path -Parent $PSScriptRoot))
 $solution = Join-Path $repoRoot 'SPT-FreeSpace.slnx'
+
+if ($Version -notmatch '^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$') {
+    throw "Version must be a three-part semantic version such as 1.2.3; found '$Version'."
+}
+
+$versionParts = @($Version.Split('.') | ForEach-Object { [int64] $_ })
+if ($versionParts.Where({ $_ -gt 65534 }, 'First').Count -ne 0) {
+    throw "Version components must be at most 65534 for managed assembly metadata; found '$Version'."
+}
 
 if ([string]::IsNullOrWhiteSpace($SptPath)) {
     throw 'Set -SptPath or SPT_ROOT to the exact SPT 4.0.13 installation.'
@@ -43,12 +54,12 @@ if ($sptVersion -ne $expectedSptAssemblyVersion) {
     throw "Expected spt-core assembly version $expectedSptAssemblyVersion, found '$sptVersion'."
 }
 
-& dotnet build $solution -c $Configuration "-p:SPTPath=$resolvedSptPath"
+& dotnet build $solution -c $Configuration "-p:SPTPath=$resolvedSptPath" "-p:ModVersion=$Version"
 if ($LASTEXITCODE -ne 0) {
     throw "Release build failed with exit code $LASTEXITCODE."
 }
 
-& dotnet test $solution -c $Configuration "-p:SPTPath=$resolvedSptPath" --no-build --no-restore
+& dotnet test $solution -c $Configuration "-p:SPTPath=$resolvedSptPath" "-p:ModVersion=$Version" --no-build --no-restore
 if ($LASTEXITCODE -ne 0) {
     throw "Unit tests failed with exit code $LASTEXITCODE."
 }
@@ -60,10 +71,10 @@ if (-not (Test-Path -LiteralPath $builtDll -PathType Leaf)) {
 
 $distPlugin = Join-Path $repoRoot 'dist\BepInEx\plugins\SPT-FreeSpace'
 $distDll = Join-Path $distPlugin 'SPT-FreeSpace.dll'
-$stagingRoot = Join-Path $repoRoot "artifacts\staging\SPT-FreeSpace-$version"
+$stagingRoot = Join-Path $repoRoot "artifacts\staging\SPT-FreeSpace-$Version"
 $stagingPlugin = Join-Path $stagingRoot 'BepInEx\plugins\SPT-FreeSpace'
 $releaseRoot = Join-Path $repoRoot 'artifacts\release'
-$zipPath = Join-Path $releaseRoot "SPT-FreeSpace-$version.zip"
+$zipPath = Join-Path $releaseRoot "SPT-FreeSpace-$Version.zip"
 $hashPath = "$zipPath.sha256"
 
 function Assert-WorkspaceChild {
@@ -126,7 +137,7 @@ if ($entries.Count -ne 1 -or $entries[0] -ne $expectedEntry) {
 $hash = (Get-FileHash -LiteralPath $zipPath -Algorithm SHA256).Hash.ToLowerInvariant()
 [IO.File]::WriteAllText(
     $hashPath,
-    "$hash  SPT-FreeSpace-$version.zip`n",
+    "$hash  SPT-FreeSpace-$Version.zip`n",
     [Text.UTF8Encoding]::new($false))
 
 Remove-Item -LiteralPath $stagingRoot -Recurse -Force

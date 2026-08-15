@@ -11,11 +11,15 @@ internal sealed class FreeSpaceSettings
     private FreeSpaceSettings(
         ConfigEntry<bool> enabled,
         ConfigEntry<CapacityDisplayMode> displayMode,
+        ConfigEntry<bool> countNestedContainersAsUsed,
+        ConfigEntry<bool> fullnessColorScale,
         ConfigEntry<float> refreshInterval,
         ConfigEntry<bool> debugLogging)
     {
         Enabled = enabled;
         DisplayMode = displayMode;
+        CountNestedContainersAsUsed = countNestedContainersAsUsed;
+        FullnessColorScale = fullnessColorScale;
         RefreshInterval = refreshInterval;
         DebugLogging = debugLogging;
     }
@@ -23,6 +27,10 @@ internal sealed class FreeSpaceSettings
     internal ConfigEntry<bool> Enabled { get; }
 
     internal ConfigEntry<CapacityDisplayMode> DisplayMode { get; }
+
+    internal ConfigEntry<bool> CountNestedContainersAsUsed { get; }
+
+    internal ConfigEntry<bool> FullnessColorScale { get; }
 
     internal ConfigEntry<float> RefreshInterval { get; }
 
@@ -41,6 +49,17 @@ internal sealed class FreeSpaceSettings
                 "Display mode",
                 CapacityDisplayMode.UsedTotal,
                 "Show used or available recursive capacity before the total."),
+            config.Bind(
+                "General",
+                "Count nested containers as used space",
+                true,
+                "Count each nested container's footprint as used capacity. " +
+                "Disable to subtract those footprints from recursive total capacity."),
+            config.Bind(
+                "General",
+                "Fullness color scale",
+                false,
+                "Color the counter from green through yellow to red as the container fills."),
             config.Bind(
                 "General",
                 "Refresh interval",

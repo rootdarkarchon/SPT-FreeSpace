@@ -42,11 +42,16 @@ internal static class GridItemViewBindPatch
 
     private static void Postfix(
         GridItemView __instance,
-        TraderControllerClass itemController)
+        TraderControllerClass itemController,
+        IItemOwner itemOwner)
     {
         try
         {
-            FreeSpaceOverlayFactory.Bind(__instance, __instance.Item, itemController);
+            FreeSpaceOverlayFactory.Bind(
+                __instance,
+                __instance.Item,
+                itemController,
+                itemOwner);
         }
         catch (Exception exception)
         {

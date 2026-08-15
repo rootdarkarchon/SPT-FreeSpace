@@ -37,13 +37,18 @@ The root stash itself is not an item tile and therefore receives no overlay.
 
 ## 3. Capacity semantics
 
-### 3.1 Recommended version-1 metric: net usable capacity
+### 3.1 Configurable nested-container footprint metric
 
-The overlay should answer:
+The overlay reports recursive grid capacity. The user-requested default counts
+nested container footprints as used space:
 
-> How many payload cells are currently free across this container and all nested grid containers, out of the maximum payload cells available with the current nested-container arrangement?
+> How many cells are currently free across this container and all nested grid
+> containers, out of all grid cells in that hierarchy?
 
-A nested container occupies cells in its parent, but those cells are structural overhead rather than stored payload. Its own usable capacity is added recursively.
+A nested container occupies cells in its parent and therefore contributes its
+footprint to used capacity by default. Its own capacity is still added
+recursively. A setting can instead treat that footprint as structural overhead
+and remove it from the recursive total.
 
 For container `C`:
 
@@ -63,7 +68,11 @@ available(C)
       - ownOccupied(C)
       + sum(available(childContainer))
 
-total(C)
+total(C), when nested containers count as used (default)
+    = ownTotal(C)
+      + sum(total(childContainer))
+
+total(C), when nested containers do not count as used
     = ownTotal(C)
       - nestedFootprint(C)
       + sum(total(childContainer))
@@ -85,14 +94,17 @@ outer free cells      = 20 - 4 - 3 = 13
 child free cells      = 12
 available             = 13 + 12 = 25
 
-outer payload ceiling = 20 - 4 = 16
-child payload ceiling = 12
-total                 = 16 + 12 = 28
+outer grid cells      = 20
+child grid cells      = 12
+total                 = 20 + 12 = 32
 
-display               = 25/28
+available display     = 25/32
+used display          = 7/32
 ```
 
-If the ordinary 3-cell item is removed, the hierarchy displays `28/28`.
+If nested-container used-space counting is disabled, total becomes
+`20 - 4 + 12 = 28`, producing `25/28` available or `3/28` used. Removing the
+ordinary item produces `28/32` (default) or `28/28` (disabled).
 
 ### 3.3 Explicit non-meaning
 
@@ -106,11 +118,13 @@ If the ordinary 3-cell item is removed, the hierarchy displays `28/28`.
 
 This distinction matters because a container may have ten empty cells while still being unable to accept a particular `2×3` item due to fragmentation or filters.
 
-### 3.4 Rejected default: gross grid cells
+### 3.4 User-selected default and original net-usable mode
 
-A simpler gross metric would sum every grid cell in the hierarchy and treat nested-container footprints as occupied. That makes a completely empty nested hierarchy appear partially full. It is mathematically defensible but less useful for the intended “how much usable room do I have?” display.
-
-Do not add a metric-mode option in the initial implementation unless the actual user requests it. Keep version 1 unambiguous.
+The original handoff selected the net-usable formula, which subtracts nested
+footprints from `total` and therefore does not count them in `used`. The user
+subsequently requested a configurable choice and selected footprint-counted
+gross capacity as the default. Disabling `Count nested containers as used
+space` restores the exact original handoff formula.
 
 ## 4. Technical evidence
 
@@ -167,10 +181,10 @@ SPT-FreeSpace.Overlay
 
 Recommended visual defaults:
 
-- bottom-right anchor;
+- top-left anchor, offset below a visible item tag;
 - 2–3 pixel inset;
 - single-line `TextMeshProUGUI`;
-- right alignment;
+- left alignment;
 - no wrapping;
 - auto-sizing within a conservative range;
 - existing EFT/TMP font reused from the view or a nearby built-in label;
@@ -179,7 +193,10 @@ Recommended visual defaults:
 - last sibling so it renders above the item icon;
 - no layout component that can resize the parent item view.
 
-Containers are not stackable in normal use, so the bottom-right stack-count area is the least disruptive default. Runtime testing still needs to check tags and other UI mods.
+The overlay uses the top-left corner and moves beneath the native item-tag
+background's actual lower edge when a visible non-empty tag exists. Runtime
+testing still needs to verify the geometry at supported UI scales and in opened
+grid windows.
 
 ### 5.4 Binding hook
 
@@ -202,6 +219,8 @@ Do not replace EFT prefabs and do not suppress original methods.
 Use a central main-thread refresh service rather than patching every possible inventory mutation:
 
 - active overlays register on enable/bind and unregister on disable/destroy;
+- a disabled pooled view retains its binding and re-registers when enabled,
+  while a rebind or destroy clears it completely;
 - every 0.25 seconds of unscaled time, refresh all active eligible overlays;
 - create one per-tick memoization dictionary keyed by item ID;
 - calculate each unique container subtree at most once per tick;
@@ -300,8 +319,8 @@ Fika does not need shared state for this feature. Every client that wants the ov
 | Wrong 4.0.13 item-view lifecycle hook | Medium | Medium | Source-map first; patch a verified bind/update method; test view pooling and all inventory screens |
 | Overlay appears on trader/flea items | Medium | Low | Implement and test an explicit player-ownership predicate |
 | Direct-child enumeration double-counts descendants | Medium | High | Require direct `GridItemAddress` parent matching; cover with unit tests |
-| Rotated/folded footprint counted incorrectly | Low–Medium | Medium | Use EFT's native rotation-aware size API from the exact source |
-| UI overlap with tags or another mod | Medium | Low | Small bottom-right overlay, last sibling, no layout/raycast; manual compatibility tests |
+| Rotated/folded footprint counted incorrectly | Low–Medium | Medium | Use EFT's native rotation-aware size API and native `FoldableComponent.Folded` state from the exact target |
+| UI overlap with tags or another mod | Medium | Low | Small tag-aware top-left overlay, last sibling, no layout/raycast; manual compatibility tests |
 | Refresh traversal causes menu hitching | Low | Medium | 0.25 s scheduler, per-pass memoization, update text only on change, optional timing |
 | Corrupt/modded cycle causes recursion loop | Low | High | Active recursion set, depth guard, throttled warning, fail closed |
 | 4.1 source assumptions leak into 4.0.13 build | Medium | High | Build only against exact 4.0.13 references and source; record every mapped symbol |

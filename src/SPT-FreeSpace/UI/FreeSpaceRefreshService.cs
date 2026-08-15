@@ -27,6 +27,9 @@ internal sealed class FreeSpaceRefreshService : MonoBehaviour
     {
         _settings = settings;
         _settings.Enabled.SettingChanged += OnSettingChanged;
+        _settings.DisplayMode.SettingChanged += OnSettingChanged;
+        _settings.CountNestedContainersAsUsed.SettingChanged += OnSettingChanged;
+        _settings.FullnessColorScale.SettingChanged += OnSettingChanged;
         _settings.RefreshInterval.SettingChanged += OnSettingChanged;
         _settings.DebugLogging.SettingChanged += OnSettingChanged;
         _nextRefresh = 0f;
@@ -61,6 +64,9 @@ internal sealed class FreeSpaceRefreshService : MonoBehaviour
 
         _initialized = false;
         _settings.Enabled.SettingChanged -= OnSettingChanged;
+        _settings.DisplayMode.SettingChanged -= OnSettingChanged;
+        _settings.CountNestedContainersAsUsed.SettingChanged -= OnSettingChanged;
+        _settings.FullnessColorScale.SettingChanged -= OnSettingChanged;
         _settings.RefreshInterval.SettingChanged -= OnSettingChanged;
         _settings.DebugLogging.SettingChanged -= OnSettingChanged;
 
@@ -101,7 +107,9 @@ internal sealed class FreeSpaceRefreshService : MonoBehaviour
         long started = Stopwatch.GetTimestamp();
         SnapshotOverlays();
 
-        var context = new CapacityCalculationContext(OnCapacityGuardFailure);
+        var context = new CapacityCalculationContext(
+            _settings.CountNestedContainersAsUsed.Value,
+            OnCapacityGuardFailure);
         int refreshed = 0;
         foreach (FreeSpaceOverlay overlay in _snapshot)
         {

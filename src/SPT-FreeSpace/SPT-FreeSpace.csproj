@@ -7,9 +7,11 @@
     <ImplicitUsings>disable</ImplicitUsings>
     <AssemblyName>SPT-FreeSpace</AssemblyName>
     <RootNamespace>SPTFreeSpace</RootNamespace>
-    <Version>1.0.0</Version>
-    <AssemblyVersion>1.0.0.0</AssemblyVersion>
-    <FileVersion>1.0.0.0</FileVersion>
+    <ModVersion Condition="'$(ModVersion)' == ''">1.0.0</ModVersion>
+    <Version>$(ModVersion)</Version>
+    <AssemblyVersion>$(ModVersion).0</AssemblyVersion>
+    <FileVersion>$(ModVersion).0</FileVersion>
+    <GeneratedModVersionFile>$(MSBuildProjectDirectory)\obj\$(Configuration)\$(TargetFramework)\GeneratedModVersion.g.cs</GeneratedModVersionFile>
     <Deterministic>true</Deterministic>
     <DebugType>portable</DebugType>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
@@ -41,6 +43,8 @@
            Text="Required Unity UI module is missing: $(ManagedRoot)\UnityEngine.UIModule.dll" />
     <Error Condition="!Exists('$(ManagedRoot)\Unity.TextMeshPro.dll')"
            Text="Required TextMeshPro assembly is missing: $(ManagedRoot)\Unity.TextMeshPro.dll" />
+    <Error Condition="!Exists('$(ManagedRoot)\ItemComponent.Types.dll')"
+           Text="Required EFT item-component facade is missing: $(ManagedRoot)\ItemComponent.Types.dll" />
   </Target>
 
   <ItemGroup>
@@ -54,6 +58,10 @@
     </Reference>
     <Reference Include="BepInEx">
       <HintPath>$(BepInExCoreRoot)\BepInEx.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="ItemComponent.Types">
+      <HintPath>$(ManagedRoot)\ItemComponent.Types.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="UnityEngine">
@@ -77,5 +85,16 @@
       <Private>false</Private>
     </Reference>
   </ItemGroup>
+
+  <Target Name="GenerateModVersionSource" BeforeTargets="CoreCompile">
+    <WriteLinesToFile
+      File="$(GeneratedModVersionFile)"
+      Lines="namespace SPTFreeSpace%3B internal static class BuildVersion { internal const string Value = &quot;$(ModVersion)&quot;%3B }"
+      Overwrite="true"
+      WriteOnlyWhenDifferent="true" />
+    <ItemGroup>
+      <Compile Include="$(GeneratedModVersionFile)" />
+    </ItemGroup>
+  </Target>
 
 </Project>

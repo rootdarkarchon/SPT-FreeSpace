@@ -103,7 +103,13 @@ internal sealed class ContainerCapacityCalculator<TContainer>
                 }
             }
 
-            long total = ClampToCapacity(ownTotal - nestedFootprint + childTotal);
+            long total = ownTotal + childTotal;
+            if (!context.CountNestedContainersAsUsed)
+            {
+                total -= nestedFootprint;
+            }
+
+            total = ClampToCapacity(total);
             long available = ownTotal - ownOccupied + childAvailable;
             available = Math.Max(0, Math.Min(total, available));
 

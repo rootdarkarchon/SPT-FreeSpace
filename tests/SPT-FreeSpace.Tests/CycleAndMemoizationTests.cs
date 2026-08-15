@@ -23,7 +23,7 @@ internal sealed class CycleAndMemoizationTests
 
         Assert.Multiple(() =>
         {
-            Assert.That(result, Is.EqualTo(new CapacityResult(24, 24)));
+            Assert.That(result, Is.EqualTo(new CapacityResult(24, 30)));
             Assert.That(failures, Has.Count.EqualTo(1));
             Assert.That(failures[0].Reason, Is.EqualTo(CapacityGuardReason.Cycle));
             Assert.That(failures[0].ParentId, Is.EqualTo("child"));
@@ -46,7 +46,7 @@ internal sealed class CycleAndMemoizationTests
 
         Assert.Multiple(() =>
         {
-            Assert.That(parentResult, Is.EqualTo(new CapacityResult(28, 28)));
+            Assert.That(parentResult, Is.EqualTo(new CapacityResult(28, 32)));
             Assert.That(childResult, Is.EqualTo(new CapacityResult(12, 12)));
             Assert.That(adapter.GridEnumerations["child"], Is.EqualTo(1));
         });

@@ -19,6 +19,11 @@ internal sealed class ItemGridAdapter : IContainerCapacityAdapter<CompoundItem>
 
     public IEnumerable<CapacityGrid<CompoundItem>> GetGrids(CompoundItem container)
     {
+        if (IsFoldedContainer(container))
+        {
+            yield break;
+        }
+
         StashGridClass[]? grids = container.Grids;
         if (grids == null)
         {
@@ -41,6 +46,11 @@ internal sealed class ItemGridAdapter : IContainerCapacityAdapter<CompoundItem>
 
     internal static bool IsEligibleContainer(CompoundItem? container)
     {
+        return HasGridCapacity(container) && !IsFoldedContainer(container);
+    }
+
+    internal static bool HasGridCapacity(CompoundItem? container)
+    {
         StashGridClass[]? grids = container?.Grids;
         if (grids == null)
         {
@@ -56,6 +66,12 @@ internal sealed class ItemGridAdapter : IContainerCapacityAdapter<CompoundItem>
         }
 
         return false;
+    }
+
+    internal static bool IsFoldedContainer(CompoundItem? container)
+    {
+        FoldableComponent? foldable = container?.GetItemComponent<FoldableComponent>();
+        return foldable != null && foldable.Folded;
     }
 
     private static IEnumerable<CapacityItem<CompoundItem>> EnumerateDirectItems(

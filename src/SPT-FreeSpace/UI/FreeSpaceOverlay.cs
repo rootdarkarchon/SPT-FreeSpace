@@ -5,6 +5,7 @@ using SPTFreeSpace.Capacity;
 using SPTFreeSpace.Configuration;
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace SPTFreeSpace.UI;
 
@@ -13,27 +14,37 @@ internal sealed class FreeSpaceOverlay : MonoBehaviour
     internal const string OverlayObjectName = "SPT-FreeSpace.Overlay";
 
     private TextMeshProUGUI _label = null!;
+    private TextMeshProUGUI? _tagLabel;
+    private Image? _tagBackground;
+    private readonly Vector3[] _tagCorners = new Vector3[4];
     private GridItemView? _view;
     private CompoundItem? _container;
     private TraderControllerClass? _bindController;
+    private IItemOwner? _bindOwner;
     private CapacityResult? _lastResult;
     private CapacityDisplayMode? _lastDisplayMode;
 
-    internal void Initialize(TextMeshProUGUI label)
+    internal void Initialize(
+        TextMeshProUGUI label,
+        TextMeshProUGUI? tagLabel,
+        Image? tagBackground)
     {
         _label = label;
+        _tagLabel = tagLabel;
+        _tagBackground = tagBackground;
         HideAndClear();
     }
 
     internal void Bind(
         GridItemView view,
         CompoundItem container,
-        TraderControllerClass bindController)
+        TraderControllerClass bindController,
+        IItemOwner bindOwner)
     {
         HideAndClear();
 
-        if (!ItemGridAdapter.IsEligibleContainer(container) ||
-            !PlayerOwnership.IsPlayerOwned(container, bindController))
+        if (!ItemGridAdapter.HasGridCapacity(container) ||
+            !PlayerOwnership.IsPlayerOwned(bindController, bindOwner))
         {
             return;
         }
@@ -41,11 +52,12 @@ internal sealed class FreeSpaceOverlay : MonoBehaviour
         _view = view;
         _container = container;
         _bindController = bindController;
+        _bindOwner = bindOwner;
         _lastResult = null;
         _lastDisplayMode = null;
         _label.enabled = false;
         transform.SetAsLastSibling();
-        UpdateWidth();
+        UpdateLayout();
         Plugin.RefreshService?.Register(this);
     }
 
@@ -63,7 +75,13 @@ internal sealed class FreeSpaceOverlay : MonoBehaviour
 
             if (!Plugin.Settings.Enabled.Value)
             {
-                HideLabel();
+                HideLabelAndInvalidate();
+                return;
+            }
+
+            if (ItemGridAdapter.IsFoldedContainer(_container))
+            {
+                HideLabelAndInvalidate();
                 return;
             }
 
@@ -83,9 +101,10 @@ internal sealed class FreeSpaceOverlay : MonoBehaviour
                 }
             }
 
+            ApplyColor(result);
             _label.enabled = true;
             transform.SetAsLastSibling();
-            UpdateWidth();
+            UpdateLayout();
         }
         catch (Exception exception)
         {
@@ -103,9 +122,17 @@ internal sealed class FreeSpaceOverlay : MonoBehaviour
         _view = null;
         _container = null;
         _bindController = null;
+        _bindOwner = null;
         _lastResult = null;
         _lastDisplayMode = null;
 
+        HideLabel();
+    }
+
+    private void HideLabelAndInvalidate()
+    {
+        _lastResult = null;
+        _lastDisplayMode = null;
         HideLabel();
     }
 
@@ -118,6 +145,7 @@ internal sealed class FreeSpaceOverlay : MonoBehaviour
 
         _label.text = string.Empty;
         _label.enabled = false;
+        _label.color = Color.white;
     }
 
     private bool IsCurrentBindingLive()
@@ -126,11 +154,11 @@ internal sealed class FreeSpaceOverlay : MonoBehaviour
                _view.gameObject.activeInHierarchy &&
                _container != null &&
                ReferenceEquals(_view.Item, _container) &&
-               ItemGridAdapter.IsEligibleContainer(_container) &&
-               PlayerOwnership.IsPlayerOwned(_container, _bindController);
+               ItemGridAdapter.HasGridCapacity(_container) &&
+               PlayerOwnership.IsPlayerOwned(_bindController, _bindOwner);
     }
 
-    private void UpdateWidth()
+    private void UpdateLayout()
     {
         if (_view == null)
         {
@@ -139,15 +167,78 @@ internal sealed class FreeSpaceOverlay : MonoBehaviour
 
         var rectTransform = (RectTransform)transform;
         float width = Mathf.Max(18f, _view.RectTransform.rect.width - 6f);
-        if (!Mathf.Approximately(rectTransform.sizeDelta.x, width))
+        float topOffset = GetTopOffset();
+
+        if (!Mathf.Approximately(rectTransform.sizeDelta.x, width) ||
+            !Mathf.Approximately(rectTransform.sizeDelta.y, 16f))
         {
-            rectTransform.sizeDelta = new Vector2(width, 18f);
+            rectTransform.sizeDelta = new Vector2(width, 16f);
         }
+
+        var position = new Vector2(3f, topOffset);
+        if (rectTransform.anchoredPosition != position)
+        {
+            rectTransform.anchoredPosition = position;
+        }
+    }
+
+    private float GetTopOffset()
+    {
+        if (_tagLabel == null ||
+            _tagBackground == null ||
+            !_tagLabel.enabled ||
+            !_tagLabel.gameObject.activeInHierarchy ||
+            !_tagBackground.enabled ||
+            !_tagBackground.gameObject.activeInHierarchy ||
+            string.IsNullOrWhiteSpace(_tagLabel.text))
+        {
+            return -3f;
+        }
+
+        RectTransform viewRect = _view!.RectTransform;
+        _tagBackground.rectTransform.GetWorldCorners(_tagCorners);
+
+        float bottom = float.PositiveInfinity;
+        foreach (Vector3 corner in _tagCorners)
+        {
+            float localY = viewRect.InverseTransformPoint(corner).y;
+            bottom = Mathf.Min(bottom, localY);
+        }
+
+        if (float.IsNaN(bottom) || float.IsInfinity(bottom))
+        {
+            return -3f;
+        }
+
+        float rawOffset = bottom - viewRect.rect.yMax - 2f;
+        float lowestVisibleOffset = -Mathf.Max(3f, viewRect.rect.height - 16f);
+        return Mathf.Clamp(rawOffset, lowestVisibleOffset, -3f);
+    }
+
+    private void ApplyColor(CapacityResult result)
+    {
+        if (!Plugin.Settings.FullnessColorScale.Value)
+        {
+            _label.color = Color.white;
+            return;
+        }
+
+        CapacityColor color = CapacityFullnessColorScale.GetColor(result);
+        _label.color = new Color(color.Red, color.Green, color.Blue, 1f);
     }
 
     private void OnDisable()
     {
-        HideAndClear();
+        Plugin.RefreshService?.Unregister(this);
+        HideLabelAndInvalidate();
+    }
+
+    private void OnEnable()
+    {
+        if (_view != null && _container != null)
+        {
+            Plugin.RefreshService?.Register(this);
+        }
     }
 
     private void OnDestroy()

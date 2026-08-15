@@ -1,0 +1,68 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Build and release tagged version
+    runs-on: [self-hosted, Windows, X64, spt-4.0.13-40087]
+    env:
+      SPT_ROOT: D:\Tarkov-SPT
+
+    steps:
+      - name: Check out tagged source
+        uses: actions/checkout@v6
+
+      - name: Set up .NET 10 SDK
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Validate tag and derive mod version
+        shell: pwsh
+        run: |
+          $tag = '${{ github.ref_name }}'
+          if ($tag -notmatch '^v(?<version>(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*))$') {
+              throw "Release tags must use vMAJOR.MINOR.PATCH; found '$tag'."
+          }
+
+          $version = $Matches.version
+          "MOD_VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "RELEASE_ZIP=artifacts/release/SPT-FreeSpace-$version.zip" |
+              Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Build, test, and package
+        shell: pwsh
+        run: >-
+          ./scripts/Build-Release.ps1
+          -SptPath $env:SPT_ROOT
+          -Version $env:MOD_VERSION
+
+      - name: Upload workflow artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: SPT-FreeSpace-${{ env.MOD_VERSION }}
+          path: |
+            ${{ env.RELEASE_ZIP }}
+            ${{ env.RELEASE_ZIP }}.sha256
+          if-no-files-found: error
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v3
+        with:
+          name: SPT-FreeSpace ${{ env.MOD_VERSION }}
+          generate_release_notes: true
+          fail_on_unmatched_files: true
+          files: |
+            ${{ env.RELEASE_ZIP }}
+            ${{ env.RELEASE_ZIP }}.sha256

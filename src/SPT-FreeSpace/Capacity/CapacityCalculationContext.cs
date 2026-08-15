@@ -9,9 +9,19 @@ internal sealed class CapacityCalculationContext
         new HashSet<string>(StringComparer.Ordinal);
 
     internal CapacityCalculationContext(Action<CapacityGuardFailure>? guardFailure = null)
+        : this(true, guardFailure)
     {
+    }
+
+    internal CapacityCalculationContext(
+        bool countNestedContainersAsUsed,
+        Action<CapacityGuardFailure>? guardFailure = null)
+    {
+        CountNestedContainersAsUsed = countNestedContainersAsUsed;
         GuardFailure = guardFailure;
     }
+
+    internal bool CountNestedContainersAsUsed { get; }
 
     internal Dictionary<string, CapacityResult> Memo { get; } =
         new Dictionary<string, CapacityResult>(StringComparer.Ordinal);

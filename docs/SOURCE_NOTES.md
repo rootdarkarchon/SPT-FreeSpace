@@ -6,7 +6,10 @@ These references establish that the required APIs and UI patterns exist. They ar
 
 Before implementation, replace every “lead” below with an exact mapping from the user's matching source tree.
 
-Do not decompile installed binaries.
+Use the matching source tree as authority. Native EFT binary inspection is
+limited to the exact installed build when the corresponding native declaration
+is absent from that tree; do not use the stale `B:\source\eft` or
+`B:\source\tarkov2` trees.
 
 ## Target baseline
 
@@ -197,9 +200,10 @@ explicitly excluded. SPT metadata was checked against the read-only official
 | Rotation-aware cell size | Installed `Assembly-CSharp.dll` | `EFT.InventoryLogic.Item` | `public XYCellSizeStruct CalculateRotatedSize(ItemRotation rotation)` | Public | Native footprint calculation; malformed/non-positive results contribute zero. |
 | Item-view bind/update | Installed `Assembly-CSharp.dll` | `EFT.UI.DragAndDrop.GridItemView` | `public GridItemView NewGridItemView(Item item, ItemContextAbstractClass sourceContext, ItemRotation rotation, TraderControllerClass itemController, IItemOwner itemOwner, FilterPanel filterPanel, global::IContainer container, ItemUiContext itemUiContext, InsuranceCompanyClass insurance, GClass2067 wishlistManger = null)` | Public Harmony postfix | `UpdateItemName` does not exist in build 40087. `NewGridItemView` calls `ItemView.NewItemView(...)` before returning and is called by the base pool factory and all inspected grid-view subclasses. Resolution failure logs fatal and disables the feature. |
 | Current item on view | Installed `Assembly-CSharp.dll` | `EFT.UI.DragAndDrop.ItemView` | `public EFT.InventoryLogic.Item Item { get; set; }` | Public | Set by `NewItemView` before the selected postfix runs. Null/destroyed views are hidden safely. |
-| Player ownership | Installed `Assembly-CSharp.dll` | `EFT.InventoryLogic.Item`; `EFT.InventoryLogic.InventoryController` | `public IItemOwner Owner { get; }`; view bind argument `TraderControllerClass itemController` | Public | Require `item.Owner` to be the exact same object as the bind controller and require that controller to be an `InventoryController`. This excludes trader/flea/mail/preview/world owners without relying on `EOwnerType` alone. Failure hides the overlay. |
-| Reusable TMP font | Installed `Assembly-CSharp.dll` | `EFT.UI.DragAndDrop.GridItemView` | `public TextMeshProUGUI TextMeshProUGUI_0 { get; }`; `public TextMeshProUGUI ItemValue { get; }` | Public | Copy the first available built-in font/material from these existing item-tile labels. If neither is usable, hide rather than ship an asset. |
-| View cleanup/rebind | Installed `Assembly-CSharp.dll` | `EFT.UI.DragAndDrop.GridItemView`; Unity component lifecycle | `public override void Kill()`; `NewGridItemView(...)` above; overlay `OnDisable()` / `OnDestroy()` | Public; no patch needed for `Kill` | The single bind postfix resets pooled views. The child component clears and unregisters on disable/destroy. A failed rebind hides immediately, preventing stale text. |
+| Player ownership | Installed `Assembly-CSharp.dll` | `EFT.InventoryLogic.InventoryController`; `EFT.UI.DragAndDrop.GridView` | `NewGridItemView(...)` bind arguments `TraderControllerClass itemController` and `IItemOwner itemOwner`; `GridView.Show(...)` resolves and retains its grid owner | Public | Require the explicit bind owner and bind controller to be the same profile `InventoryController`. Using the bind owner is significant for nested `GridWindow` tiles and still excludes trader/flea/mail/preview/world owners without relying on `EOwnerType` alone. Failure hides the overlay. |
+| Reusable TMP font and tag | Installed `Assembly-CSharp.dll` | `EFT.UI.DragAndDrop.GridItemView` | `public TextMeshProUGUI TextMeshProUGUI_0 { get; }`; `public TextMeshProUGUI ItemValue { get; }`; private non-obfuscated fields `TextMeshProUGUI TagName` and `Image _tagColor` | Public font fallback; narrow exact-field reflection for tag geometry | Copy the first available built-in font from the public labels. The earlier `TextMeshProUGUI_0` assumption was wrong: it is the inscription, while `TagName` and `_tagColor` are the actual native item-tag text/background used by build 40087. The independent overlay reads their visibility and the background rectangle's lower edge without modifying either object. Missing fields fail back to the normal top-left inset. |
+| Folded container state | Installed `Assembly-CSharp.dll` and `ItemComponent.Types.dll`; Foldables `1.0.3` source commit `6a954353f396eee8830a5112181b1bbc5a20d609` | `EFT.InventoryLogic.Item`; `EFT.InventoryLogic.FoldableComponent` | `GetItemComponent<FoldableComponent>()`; `FoldableComponent.Folded` | Public | Foldables' backpack/vest classes create a native `FoldableComponent` and add it to `Item.Components`. A folded child retains its occupied parent footprint but contributes no nested available/total capacity; its own overlay remains registered but hidden so unfolding restores it. No Foldables assembly reference or dependency is required. |
+| View cleanup/rebind | Installed `Assembly-CSharp.dll` | `EFT.UI.DragAndDrop.GridItemView`; Unity component lifecycle | `public override void Kill()`; `NewGridItemView(...)` above; overlay `OnEnable()` / `OnDisable()` / `OnDestroy()` | Public; no patch needed for `Kill` | The single bind postfix resets pooled views. A disabled view unregisters and hides but retains its binding so a separately created inactive window can re-register on enable. Rebind/destroy clears completely, and a failed rebind hides immediately, preventing stale text. |
 
 ### Lifecycle coverage evidence
 
@@ -208,6 +212,19 @@ Installed build 40087 call-site inspection found `NewGridItemView(...)` used by:
 - `GridItemView.Create` after `ItemViewFactory.CreateFromPool<GridItemView>(...)`;
 - selectable, slot, hideout, transfer, quest, and fast-access grid views;
 - trading, ragfair offer/new-offer, mail-transfer, and insurance grid views.
+
+The standalone-container path is `GridWindow.Show(...)` →
+`ContainedGridsView.CreateGrids(...)` → `GridView.Show(...)` →
+`ItemUiContext.CreateItemView(...)` → `GridItemView.Create(...)` →
+`NewGridItemView(...)`. `GridView` passes its separately resolved `itemOwner`
+through that chain; the postfix must use that bind argument rather than
+re-deriving ownership from the item.
+
+Standalone windows can construct their pooled item tiles under a disabled
+parent. Therefore `OnDisable()` cannot discard a valid binding permanently;
+`OnEnable()` re-registers it with the central refresh service. This fixes the
+window-specific lifecycle gap without enumerating `ItemUiContext._windows` or
+adding another Harmony target.
 
 This is both the pool creation/rebind boundary and the shared boundary for the
 non-player screens that must be filtered. One postfix is sufficient; no
@@ -220,6 +237,7 @@ secondary creation hook is required.
 - Installed `spt-core.dll`: assembly version `4.0.13.0`, target framework
   `.NETStandard,Version=v2.1`, plugin GUID `com.SPT.core`.
 - Known-good installed 4.0.13 client plugins also target `netstandard2.1`.
-- SPT-FreeSpace uses public EFT members and direct Harmony only. It has no
-  reflected private member and does not require `spt-common` or
-  `spt-reflection`.
+- SPT-FreeSpace uses direct Harmony and public EFT inventory/view members. Its
+  only private-member access is the exact, non-obfuscated build-40087
+  `GridItemView.TagName` / `_tagColor` pair used read-only for tag-relative
+  geometry. It does not require `spt-common` or `spt-reflection`.

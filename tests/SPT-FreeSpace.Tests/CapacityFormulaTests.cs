@@ -39,12 +39,12 @@ internal sealed class CapacityFormulaTests
     }
 
     [Test]
-    public void EmptyTwelveCellChild_InTwentyCellParent_IsTwentyEightOfTwentyEight()
+    public void EmptyTwelveCellChild_CountsFourCellFootprintAsUsedByDefault()
     {
         FakeContainer child = Container("child", Grid(4, 3));
         FakeContainer parent = Container("parent", Grid(5, 4, Nested("child-item", 4, child)));
 
-        Assert.That(Calculate(parent), Is.EqualTo(Result(28, 28)));
+        Assert.That(Calculate(parent), Is.EqualTo(Result(28, 32)));
     }
 
     [Test]
@@ -55,7 +55,18 @@ internal sealed class CapacityFormulaTests
             "parent",
             Grid(5, 4, Nested("child-item", 4, child), Item("ordinary", 3)));
 
-        Assert.That(Calculate(parent), Is.EqualTo(Result(25, 28)));
+        Assert.That(Calculate(parent), Is.EqualTo(Result(25, 32)));
+    }
+
+    [Test]
+    public void FoldedChildContainer_IsAnOrdinaryOccupiedItem()
+    {
+        FakeContainer foldedChild = Container("folded-child", Grid(4, 3));
+        FakeContainer parent = Container(
+            "parent",
+            Grid(5, 4, Folded("folded-child-item", 4, foldedChild)));
+
+        Assert.That(Calculate(parent), Is.EqualTo(Result(16, 20)));
     }
 
     [Test]
@@ -64,7 +75,7 @@ internal sealed class CapacityFormulaTests
         FakeContainer child = Container("child", Grid(4, 3, Item("payload", 5)));
         FakeContainer parent = Container("parent", Grid(5, 4, Nested("child-item", 4, child)));
 
-        Assert.That(Calculate(parent), Is.EqualTo(Result(23, 28)));
+        Assert.That(Calculate(parent), Is.EqualTo(Result(23, 32)));
     }
 
     [Test]
@@ -76,7 +87,7 @@ internal sealed class CapacityFormulaTests
             Grid(4, 3, Nested("grandchild-item", 2, grandchild)));
         FakeContainer parent = Container("parent", Grid(5, 4, Nested("child-item", 4, child)));
 
-        Assert.That(Calculate(parent), Is.EqualTo(Result(33, 35)));
+        Assert.That(Calculate(parent), Is.EqualTo(Result(33, 41)));
     }
 
     [Test]
@@ -92,7 +103,18 @@ internal sealed class CapacityFormulaTests
                 Nested("first-item", 2, first),
                 Nested("second-item", 1, second)));
 
-        Assert.That(Calculate(parent), Is.EqualTo(Result(26, 27)));
+        Assert.That(Calculate(parent), Is.EqualTo(Result(26, 30)));
+    }
+
+    [Test]
+    public void DisabledNestedUsedSpace_RestoresNetUsableRecursiveTotal()
+    {
+        FakeContainer child = Container("child", Grid(4, 3));
+        FakeContainer parent = Container("parent", Grid(5, 4, Nested("child-item", 4, child)));
+
+        Assert.That(
+            Calculate(parent, countNestedContainersAsUsed: false),
+            Is.EqualTo(Result(28, 28)));
     }
 
     [Test]
@@ -103,10 +125,14 @@ internal sealed class CapacityFormulaTests
         Assert.That(Calculate(root), Is.EqualTo(Result(0, 4)));
     }
 
-    private static CapacityResult Calculate(FakeContainer container)
+    private static CapacityResult Calculate(
+        FakeContainer container,
+        bool countNestedContainersAsUsed = true)
     {
         var calculator = new ContainerCapacityCalculator<FakeContainer>(new FakeAdapter());
-        return calculator.Calculate(container, new CapacityCalculationContext());
+        return calculator.Calculate(
+            container,
+            new CapacityCalculationContext(countNestedContainersAsUsed));
     }
 
     private static CapacityResult Result(int available, int total)
@@ -132,6 +158,12 @@ internal sealed class CapacityFormulaTests
     private static FakeItem Nested(string id, int footprint, FakeContainer child)
     {
         return new FakeItem(id, footprint, 1, false, child);
+    }
+
+    private static FakeItem Folded(string id, int footprint, FakeContainer ignoredChild)
+    {
+        _ = ignoredChild;
+        return new FakeItem(id, footprint, 1, false, null);
     }
 
     internal sealed record FakeContainer(string Id, IReadOnlyList<FakeGrid> Grids);

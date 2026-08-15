@@ -19,7 +19,7 @@ internal sealed class Plugin : BaseUnityPlugin
 {
     internal const string PluginGuid = "com.rootdarkarchon.spt-freespace";
     internal const string PluginName = "SPT-FreeSpace";
-    internal const string PluginVersion = "1.0.0";
+    internal const string PluginVersion = BuildVersion.Value;
     internal const string SptCoreGuid = "com.SPT.core";
     internal const string SptVersion = "4.0.13";
     internal const string EftFileVersion = "0.16.9.4008";

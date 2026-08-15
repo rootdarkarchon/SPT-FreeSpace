@@ -1,5 +1,7 @@
+using System.Reflection;
 using EFT.InventoryLogic;
 using EFT.UI.DragAndDrop;
+using HarmonyLib;
 using SPTFreeSpace.Capacity;
 using TMPro;
 using UnityEngine;
@@ -9,13 +11,20 @@ namespace SPTFreeSpace.UI;
 
 internal static class FreeSpaceOverlayFactory
 {
+    private static readonly FieldInfo? TagNameField =
+        AccessTools.Field(typeof(GridItemView), "TagName");
+    private static readonly FieldInfo? TagColorField =
+        AccessTools.Field(typeof(GridItemView), "_tagColor");
+
     private static bool _missingFontLogged;
     private static bool _invalidNamedChildLogged;
+    private static bool _missingTagFieldsLogged;
 
     internal static void Bind(
         GridItemView view,
         Item? item,
-        TraderControllerClass? bindController)
+        TraderControllerClass? bindController,
+        IItemOwner? bindOwner)
     {
         FreeSpaceOverlay? existing = FindExisting(view, out bool hasNamedChild);
         if (item is not CompoundItem container)
@@ -25,8 +34,9 @@ internal static class FreeSpaceOverlayFactory
         }
 
         if (bindController == null ||
-            !ItemGridAdapter.IsEligibleContainer(container) ||
-            !PlayerOwnership.IsPlayerOwned(container, bindController))
+            bindOwner == null ||
+            !ItemGridAdapter.HasGridCapacity(container) ||
+            !PlayerOwnership.IsPlayerOwned(bindController, bindOwner))
         {
             existing?.HideAndClear();
             return;
@@ -47,7 +57,7 @@ internal static class FreeSpaceOverlayFactory
         }
 
         FreeSpaceOverlay? overlay = existing ?? Create(view);
-        overlay?.Bind(view, container, bindController);
+        overlay?.Bind(view, container, bindController, bindOwner);
     }
 
     private static FreeSpaceOverlay? FindExisting(
@@ -71,10 +81,10 @@ internal static class FreeSpaceOverlayFactory
         overlayObject.transform.SetParent(view.transform, false);
 
         var rectTransform = (RectTransform)overlayObject.transform;
-        rectTransform.anchorMin = new Vector2(0f, 0f);
-        rectTransform.anchorMax = new Vector2(0f, 0f);
-        rectTransform.pivot = new Vector2(0f, 0f);
-        rectTransform.anchoredPosition = new Vector2(3f, 3f);
+        rectTransform.anchorMin = new Vector2(0f, 1f);
+        rectTransform.anchorMax = new Vector2(0f, 1f);
+        rectTransform.pivot = new Vector2(0f, 1f);
+        rectTransform.anchoredPosition = new Vector2(3f, -3f);
         rectTransform.sizeDelta = new Vector2(
             Mathf.Max(18f, view.RectTransform.rect.width - 6f),
             18f);
@@ -98,11 +108,11 @@ internal static class FreeSpaceOverlayFactory
 
         label.font = fontSource.font;
 
-        label.fontSize = 12f;
+        label.fontSize = 10f;
         label.enableAutoSizing = true;
-        label.fontSizeMin = 8f;
-        label.fontSizeMax = 12f;
-        label.alignment = TextAlignmentOptions.BottomLeft;
+        label.fontSizeMin = 7f;
+        label.fontSizeMax = 10f;
+        label.alignment = TextAlignmentOptions.TopLeft;
         label.enableWordWrapping = false;
         label.overflowMode = TextOverflowModes.Overflow;
         label.richText = false;
@@ -117,8 +127,38 @@ internal static class FreeSpaceOverlayFactory
 
         overlayObject.transform.SetAsLastSibling();
         FreeSpaceOverlay overlay = overlayObject.GetComponent<FreeSpaceOverlay>();
-        overlay.Initialize(label);
+        overlay.Initialize(label, GetTagName(view), GetTagBackground(view));
         return overlay;
+    }
+
+    private static TextMeshProUGUI? GetTagName(GridItemView view)
+    {
+        return GetTagFieldValue<TextMeshProUGUI>(TagNameField, view);
+    }
+
+    private static Image? GetTagBackground(GridItemView view)
+    {
+        return GetTagFieldValue<Image>(TagColorField, view);
+    }
+
+    private static T? GetTagFieldValue<T>(FieldInfo? field, GridItemView view)
+        where T : class
+    {
+        if (field != null)
+        {
+            return field.GetValue(view) as T;
+        }
+
+        if (!_missingTagFieldsLogged)
+        {
+            _missingTagFieldsLogged = true;
+            Plugin.ThrottledLog.Warning(
+                "missing-native-tag-fields",
+                "The exact EFT item-tag fields were not found; counters will use the " +
+                "normal top-left inset.");
+        }
+
+        return null;
     }
 
     private static TextMeshProUGUI? GetFontSource(GridItemView view)
