@@ -13,7 +13,7 @@ using SPTFreeSpace.UI;
 namespace SPTFreeSpace;
 
 [BepInPlugin(PluginGuid, PluginName, PluginVersion)]
-[BepInDependency(SptCoreGuid, SptVersion)]
+[BepInDependency(SptCoreGuid, TargetCompatibility.MinimumSptVersion)]
 [BepInProcess("EscapeFromTarkov.exe")]
 internal sealed class Plugin : BaseUnityPlugin
 {
@@ -21,8 +21,6 @@ internal sealed class Plugin : BaseUnityPlugin
     internal const string PluginName = "SPT-FreeSpace";
     internal const string PluginVersion = BuildVersion.Value;
     internal const string SptCoreGuid = "com.SPT.core";
-    internal const string SptVersion = "4.0.13";
-    internal const string EftFileVersion = "0.16.9.4008";
 
     internal static ManualLogSource Log { get; private set; } = null!;
 
@@ -47,23 +45,19 @@ internal sealed class Plugin : BaseUnityPlugin
             return;
         }
 
-        MethodInfo? target = GridItemViewBindPatch.ResolveTarget();
-        if (target == null)
-        {
-            Logger.LogFatal(
-                "SPT-FreeSpace disabled: exact EFT 0.16.9.0.40087 " +
-                "GridItemView.NewGridItemView target was not found.");
-            enabled = false;
-            return;
-        }
-
         try
         {
+            MethodInfo target = GridItemViewBindPatch.ResolveTarget() ??
+                throw new MissingMethodException(
+                    $"Exact EFT {TargetCompatibility.EftFileVersion} " +
+                    "GridItemView.NewGridItemView target was not found.");
+
             RefreshService = gameObject.AddComponent<FreeSpaceRefreshService>();
             RefreshService.Initialize(Settings);
 
             _harmony = new Harmony(PluginGuid);
             GridItemViewBindPatch.Enable(_harmony, target);
+            Logger.LogInfo($"Resolved item-view bind hook: {target.DeclaringType?.FullName}.{target.Name}");
         }
         catch (Exception exception)
         {
@@ -77,8 +71,9 @@ internal sealed class Plugin : BaseUnityPlugin
             return;
         }
 
-        Logger.LogInfo($"Resolved item-view bind hook: {target.DeclaringType?.FullName}.{target.Name}");
-        Logger.LogInfo($"{PluginName} {PluginVersion} loaded for SPT {SptVersion} / EFT 0.16.9.0.40087.");
+        Logger.LogInfo(
+            $"{PluginName} {PluginVersion} loaded for SPT " +
+            $"{Chainloader.PluginInfos[SptCoreGuid].Metadata.Version} / EFT {TargetCompatibility.EftFileVersion}.");
     }
 
     private void OnDestroy()
@@ -96,25 +91,8 @@ internal sealed class Plugin : BaseUnityPlugin
             return false;
         }
 
-        if (!string.Equals(sptCore.Metadata.Version.ToString(3), SptVersion, StringComparison.Ordinal))
-        {
-            error =
-                $"SPT-FreeSpace disabled: expected SPT {SptVersion}, " +
-                $"found {sptCore.Metadata.Version}.";
-            return false;
-        }
-
         string executableVersion =
             FileVersionInfo.GetVersionInfo(BepInEx.Paths.ExecutablePath).FileVersion ?? string.Empty;
-        if (!string.Equals(executableVersion, EftFileVersion, StringComparison.Ordinal))
-        {
-            error =
-                $"SPT-FreeSpace disabled: expected EFT executable file version {EftFileVersion}, " +
-                $"found '{executableVersion}'.";
-            return false;
-        }
-
-        error = string.Empty;
-        return true;
+        return TargetCompatibility.Validate(sptCore.Metadata.Version.ToString(), executableVersion, out error);
     }
 }

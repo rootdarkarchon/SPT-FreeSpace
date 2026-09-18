@@ -2,10 +2,57 @@
 
 ## Target
 
-- SPT: 4.0.13
-- EFT: 0.16.9.0.40087
-- Current milestone: M4
-- State: M0–M3 complete; M4 automated deliverables complete; precise manual runtime validation required
+- SPT: 4.1.x (automated baseline 4.1.6)
+- EFT executable file version: 0.16.9.40743
+- FreeSpace: 1.1.0
+- State: migration implemented and packaged; live-game acceptance pending. Not deployed or published.
+
+## 1.1.0 — SPT 4.1 migration (2026-09-18)
+
+- Mapped EFT types using the supplied 4.1 mapping and installed 40743 metadata.
+  The ten-parameter item-view hook, native grid traversal/footprints, ownership
+  predicate, folded-state handling, tag positioning, and current configuration
+  remain intact. The font source is now `GridItemView.ItemInscription`.
+- Preserved the existing uncommitted scrolling fix: disabled pooled overlays
+  remain tracked; registration requests immediate refresh; rebind/destruction
+  clears old state. Existing capacity formulas and display defaults are unchanged.
+- Runtime dependency minimum is 4.1.0, with an explicit 4.1 major/minor check
+  and exact EFT file-version check. Release validation uses the same policy.
+  Fixed the old truncated executable-version constant. Hook resolution errors
+  now enter the same guarded startup path as patch application failures.
+- Files changed: client plugin/configuration, patch and inventory/UI adapters;
+  project/release version defaults; compatibility-policy tests; README and docs.
+  No server, network, profile, config schema, game source, or deployment changes.
+- Build: `scripts/Build-Release.ps1 -SptPath D:\Tarkov-SPT-4.1 -Version 1.1.0`
+  succeeded with **0 warnings, 0 errors** against SPT 4.1.6.
+- Tests: **49/49 passed** (28 existing regressions plus 21 compatibility cases).
+  Includes 4.1 patch acceptance, malformed/unsupported SPT rejection, and exact
+  EFT version rejection. Existing formula/color/display/version tests still pass.
+- Read-only Cecil metadata checks passed: unique public instance
+  `NewGridItemView` with all ten exact parameter types, return type and named
+  postfix arguments; both public TMP getters; both instance tag-field types.
+  Installed tag fields are public; exact-field reflection is deliberately retained.
+- Compiled metadata checks passed: BepInEx SPT dependency `4.1.0`, plugin version
+  `1.1.0`, assembly version `1.1.0.0`. The release script rejected the old
+  `D:\Tarkov-SPT` installation before building or packaging.
+- Artifact: `artifacts/release/SPT-FreeSpace-1.1.0.zip` and `.zip.sha256`;
+  sole ZIP entry verified as `BepInEx/plugins/SPT-FreeSpace/SPT-FreeSpace.dll`.
+- ZIP SHA-256: `25308d7d79ae5cd50acf2bf619a2002a5eb429038b22d7b444e43a85082e4a40`.
+- Remaining gate: install the package into a matching client after closing EFT,
+  restart, and execute `MANUAL_TEST_MATRIX.md` A–H. Prioritize F1/F9 scrolling,
+  D2–D7 nested windows, A7–A9 tags, E1–E7 ownership/raid inventory, live settings,
+  and G6–G7 fold/unfold. Record matching optional-mod versions for G1/G2/G5.
+- Return: successful load and resolved-hook lines, any FreeSpace warnings or
+  exceptions, failed test IDs, and screenshots for visual failures. Expected:
+  one correct counter per eligible tile, prompt updates, no stale/duplicate
+  overlays or excluded-owner leakage, and unchanged input behavior.
+- Known uncertainty: no EFT launch, live Harmony installation, UI/raid observation,
+  or matching 4.1 optional-mod coexistence run was performed. API metadata and
+  unit tests do not establish those behaviors or validate other 4.1 patch releases.
+
+## Historical 4.0.13 / EFT 40087 milestones
+
+The results below describe earlier releases and are not 4.1 acceptance evidence.
 
 ## M0 — Source reconnaissance and build skeleton
 
@@ -63,3 +110,12 @@
 - Post-gate adjustment: Disabled pooled item views now retain their valid binding and re-register on enable, closing the lifecycle gap for tiles created under inactive standalone-window parents. Rebind/destroy still clears state.
 - Post-gate adjustment: Added `General / Count nested containers as used space`, default `true`. Enabled keeps child footprints in recursive `total`, so they appear in `used`; disabled subtracts those footprints from `total` and restores the exact original net-usable handoff formula. `available` is identical between the two policies.
 - Post-gate adjustment: Added a tag-triggered GitHub release workflow for strict `vMAJOR.MINOR.PATCH` tags. The tag version now drives BepInEx metadata, assembly/file versions, package names, workflow artifacts, and GitHub Releases through the shared release script. CI deliberately requires the exact local game references on a labeled Windows self-hosted runner.
+- Post-gate adjustment: Bound overlays now remain tracked while their pooled item view is temporarily disabled. Re-enabling requests an immediate central refresh, while ineligible rebinds and destruction still unregister and clear the overlay. This closes the intermittent missing-counter path observed while scrolling the stash.
+
+## 1.0.1 scrolling lifecycle fix
+
+- Build: Release succeeded against `D:\Tarkov-SPT`, 0 warnings and 0 errors.
+- Tests: 28/28 passed.
+- Artifact: `artifacts/release/SPT-FreeSpace-1.0.1.zip`; verified sole entry `BepInEx/plugins/SPT-FreeSpace/SPT-FreeSpace.dll`.
+- SHA-256: `7d0bec09532f4d5df3d259c51777649469004d240adcd45a7a3480f8e47cb4a8`.
+- Runtime validation: Pending a game restart and repeated stash-scroll check F9.

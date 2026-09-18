@@ -1,5 +1,19 @@
 # SPT-FreeSpace Manual Test Matrix
 
+Current target: SPT **4.1.x** / EFT **0.16.9.40743**, FreeSpace **1.1.0**.
+Automated baseline: SPT **4.1.6**. All A–H checks remain pending for the
+migrated package; earlier 4.0 evidence does not validate this version.
+
+Priority restart checklist: A1–A9 (load/tags/input), F1/F9 (repeated stash
+scrolling), D2–D7 (nested windows), E1–E7 (ownership including raid inventory),
+B7–B13/C8–C9/F7–F8 (live settings), then G6–G7 with a matching Foldables
+release. Run G1/G2/G5 separately with matching 4.1 UI Fixes, MoreCheckmarks,
+and Fika versions, recording the actual versions rather than reusing old ones.
+
+Return the successful `SPT-FreeSpace 1.1.0 loaded for SPT ... / EFT
+0.16.9.40743` and `Resolved item-view bind hook` log lines, any FreeSpace
+warnings/errors, and the failed matrix IDs with screenshots if applicable.
+
 ## Test setup
 
 Record:
@@ -122,6 +136,7 @@ parent total grid cells
 | F6 | Open/close inventory rapidly | No `MissingReferenceException`, `NullReferenceException`, or growing registry |
 | F7 | Disable plugin setting | Existing overlays hide promptly |
 | F8 | Re-enable plugin setting | Existing eligible overlays return without reopening the screen |
+| F9 | Scroll tagged and untagged containers out of view and back repeatedly | Every visible eligible container regains its counter within the configured refresh interval |
 
 ## G. Compatibility
 
@@ -155,7 +170,16 @@ parent total grid cells
 - release ZIP file listing;
 - SHA-256.
 
-## Current implementation evidence (2026-08-15)
+## 4.1 migration automated evidence (2026-09-18)
+
+- Release build against SPT 4.1.6 / EFT 40743: 0 warnings, 0 errors.
+- Tests: 49/49 passed (28 prior regressions and 21 version-policy cases).
+- Target metadata: exact ten-parameter hook and named postfix arguments,
+  TMP font getters, tag-field types, and plugin/dependency versions verified.
+- Release ZIP: one DLL only; SHA-256 recorded in `STATUS.md` and the sidecar.
+- Not deployed; no live A–H result or optional-mod compatibility result claimed.
+
+## Historical 4.0 implementation evidence (2026-08-15)
 
 Completed without launching EFT:
 

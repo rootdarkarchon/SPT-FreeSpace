@@ -1,12 +1,17 @@
 # SPT-FreeSpace
 
-SPT-FreeSpace is a small client-only inventory UI mod for exactly:
+SPT-FreeSpace is a small client-only inventory UI mod for:
 
-- SPT `4.0.13`
-- EFT `0.16.9.0.40087`
+- SPT `4.1.x`
+- EFT executable file version `0.16.9.40743`
+
+Version `1.1.0` is built and automatically validated against SPT `4.1.6`.
+Other 4.1 patch versions are permitted by the version policy but have not been
+individually tested. Live-game validation of this migration is pending.
 
 > **Development disclosure:** This project was generated with AI under human
-> direction. Its behavior and compatibility have been tested by a human.
+> direction. Historical releases received human testing; the 4.1 migration's
+> live behavior and compatibility still require the manual test matrix.
 
 It adds a compact recursive-capacity label to player-owned grid-container item
 tiles in the stash, player inventory, and opened container grids. The label
@@ -27,7 +32,7 @@ The installed file is:
 BepInEx/plugins/SPT-FreeSpace/SPT-FreeSpace.dll
 ```
 
-The plugin fails closed with a fatal log message on a different SPT/EFT build
+The plugin fails closed with a fatal log message outside SPT 4.1.x / EFT 40743
 or if its exact item-view hook cannot be resolved.
 
 ## Uninstall
@@ -121,20 +126,21 @@ cycle/depth guards emit throttled warnings automatically.
 
 ## Compatibility
 
-SPT-FreeSpace uses one postfix on the exact 40087
+SPT-FreeSpace uses one postfix on the exact 40743
 `GridItemView.NewGridItemView(...)` bind/rebind method. EFT's original method
 always runs. The overlay has no raycast target, does not participate in layout,
 and does not modify existing captions, values, tags, checkmarks, or tooltips.
-It reads the exact 40087 native tag text/background references only to position
+It reads the exact 40743 native tag text/background references only to position
 its independent child below a visible tag.
 
-Foldables `1.0.3` is supported without a hard plugin dependency. SPT-FreeSpace
-reads the native EFT `FoldableComponent` that Foldables adds to compatible gear;
+Foldables integration needs no hard plugin dependency. SPT-FreeSpace
+reads the native EFT `FoldableComponent` added to compatible gear;
 folded gear is treated as an ordinary occupied item rather than usable nested
 capacity.
 
-UI Fixes 5.3.11 and MoreCheckmarks 2.2.0 were present for static compatibility
-inspection. Runtime coexistence, ownership filtering, visual placement, and
+The native folded-state API has been verified in 40743. Matching 4.1 versions
+of Foldables, UI Fixes, MoreCheckmarks, and Fika still require compatibility
+testing. Runtime coexistence, ownership filtering, visual placement, and
 pooling behavior require the manual test matrix in
 [`docs/MANUAL_TEST_MATRIX.md`](docs/MANUAL_TEST_MATRIX.md).
 
@@ -143,27 +149,22 @@ the DLL locally.
 
 ## Build and test
 
-With the exact target installation available:
+With a matching target installation available:
 
 ```powershell
 pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\Build-Release.ps1 `
-  -SptPath 'D:\Tarkov-SPT' `
-  -Version '1.0.0'
+  -SptPath 'D:\Tarkov-SPT-4.1' `
+  -Version '1.1.0'
 ```
 
 The script validates the target versions, builds with project warnings treated
 as errors, runs the unit suite, creates `dist`, produces the release ZIP, checks
 its one-file layout, and writes a SHA-256 sidecar.
 
-## Tagged releases
+## Release versions
 
-Pushing a three-part semantic version tag such as `v1.2.3` runs the GitHub
-release workflow. The tag supplies `1.2.3` to the shared release script, which
-sets the BepInEx plugin metadata, managed assembly/file versions, ZIP filename,
-workflow artifact name, and GitHub Release name from that value.
-
-The workflow intentionally uses a Windows self-hosted runner labeled
-`spt-4.0.13-40087`. That runner must have the exact supported installation at
-`D:\Tarkov-SPT` and GitHub Actions Runner `2.327.1` or newer. Proprietary EFT
-and SPT runtime assemblies are not committed to this repository or downloaded
-by the workflow.
+The release script's `-Version` argument (default `1.1.0`) accepts a three-part
+version such as `1.2.3` and sets the BepInEx metadata, managed assembly/file
+versions, and ZIP filename. This checkout has no GitHub release workflow;
+tagging alone does not build or publish a release. Proprietary EFT and SPT
+runtime assemblies stay external and are never included in the package.

@@ -7,7 +7,7 @@
     <ImplicitUsings>disable</ImplicitUsings>
     <AssemblyName>SPT-FreeSpace</AssemblyName>
     <RootNamespace>SPTFreeSpace</RootNamespace>
-    <ModVersion Condition="'$(ModVersion)' == ''">1.0.0</ModVersion>
+    <ModVersion Condition="'$(ModVersion)' == ''">1.1.0</ModVersion>
     <Version>$(ModVersion)</Version>
     <AssemblyVersion>$(ModVersion).0</AssemblyVersion>
     <FileVersion>$(ModVersion).0</FileVersion>
@@ -22,7 +22,7 @@
 
   <Target Name="ValidateSPTPath" BeforeTargets="ResolveAssemblyReferences">
     <Error Condition="'$(SPTPath)' == ''"
-           Text="Set SPTPath or SPT_ROOT to the exact SPT 4.0.13 / EFT 0.16.9.0.40087 installation." />
+           Text="Set SPTPath or SPT_ROOT to an SPT 4.1.x / EFT 0.16.9.40743 installation." />
     <Error Condition="!Exists('$(SPTPath)\EscapeFromTarkov.exe')"
            Text="SPTPath does not contain EscapeFromTarkov.exe: $(SPTPath)" />
     <Error Condition="!Exists('$(ManagedRoot)\Assembly-CSharp.dll')"
@@ -32,7 +32,7 @@
     <Error Condition="!Exists('$(BepInExCoreRoot)\0Harmony.dll')"
            Text="Required Harmony assembly is missing: $(BepInExCoreRoot)\0Harmony.dll" />
     <Error Condition="!Exists('$(SPTPath)\BepInEx\plugins\spt\spt-core.dll')"
-           Text="Required SPT 4.0 client core is missing: $(SPTPath)\BepInEx\plugins\spt\spt-core.dll" />
+           Text="Required SPT 4.1 client core is missing: $(SPTPath)\BepInEx\plugins\spt\spt-core.dll" />
     <Error Condition="!Exists('$(ManagedRoot)\UnityEngine.dll')"
            Text="Required Unity facade is missing: $(ManagedRoot)\UnityEngine.dll" />
     <Error Condition="!Exists('$(ManagedRoot)\UnityEngine.CoreModule.dll')"

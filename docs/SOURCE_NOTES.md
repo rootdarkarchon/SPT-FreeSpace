@@ -1,5 +1,71 @@
 # Source Notes and Reconnaissance Leads
 
+## Current 4.1 migration mapping (2026-09-18)
+
+Supported policy: SPT **4.1.x** with EFT executable file version
+**0.16.9.40743**. Verified build baseline: SPT **4.1.6** at
+`D:\Tarkov-SPT-4.1`. Other 4.1 patches are permitted, not individually tested.
+
+Evidence: user-supplied `E:\Downloads\4.1 mappings.txt` and read-only metadata
+inspection of the target's `EscapeFromTarkov_Data/Managed/Assembly-CSharp.dll`.
+No game method bodies were decompiled for this migration. The available old
+EFT source trees were not treated as matching 4.1 source.
+
+| Old name | Verified 4.1 name |
+|---|---|
+| `TraderControllerClass` | `EFT.InventoryLogic.ItemController` |
+| `ItemContextAbstractClass` | `EFT.InventoryLogic.ItemContext` |
+| `StashGridClass` | `EFT.InventoryLogic.Grid` |
+| `XYCellSizeStruct` | `IntVec2` |
+| UI `global::IContainer` | `EFT.UI.DragAndDrop.IContainerView` (distinct from inventory `IContainer`) |
+| `InsuranceCompanyClass` | `EFT.UI.Insurance.InsuranceCompany` |
+| `GClass2067` | `EFT.WishlistManager` |
+| `GridItemView.TextMeshProUGUI_0` | `GridItemView.ItemInscription` (member rename verified from metadata) |
+
+The declared public instance hook returns `EFT.UI.DragAndDrop.GridItemView`:
+
+```csharp
+GridItemView NewGridItemView(
+    EFT.InventoryLogic.Item item,
+    EFT.InventoryLogic.ItemContext sourceContext,
+    ItemRotation rotation,
+    EFT.InventoryLogic.ItemController itemController,
+    EFT.InventoryLogic.IItemOwner itemOwner,
+    EFT.UI.FilterPanel filterPanel,
+    EFT.UI.DragAndDrop.IContainerView container,
+    EFT.UI.ItemUiContext itemUiContext,
+    EFT.UI.Insurance.InsuranceCompany insurance,
+    EFT.WishlistManager wishlistManger = null)
+```
+
+The postfix uses the named `itemController` and `itemOwner` arguments. An exact
+parameter-type lookup is retained; missing hooks or patch exceptions disable
+the feature with a fatal diagnostic. Original EFT behavior always runs.
+
+The same assembly declares these members used by the adapter and overlay:
+
+| Declaring type | Member | Use / failure behavior |
+|---|---|---|
+| `EFT.InventoryLogic.CompoundItem` | public `Grid[] Grids` | Null/empty grids are ineligible. |
+| `EFT.InventoryLogic.Grid` | public `int GridWidth`, `int GridHeight`, `IEnumerable<Item> Items`, `LocationInGrid GetItemLocation(Item)` | Direct children only; address must refer to this grid. Missing location skips the entry. |
+| `EFT.InventoryLogic.Item` | public `ItemAddress CurrentAddress`, `IntVec2 CalculateRotatedSize(ItemRotation)`, `T GetItemComponent<T>()` | Native address, footprint and folded state; no inventory mutation. |
+| `EFT.InventoryLogic.ItemAddress` | public `IContainer Container` | Inventory container identity, not the UI container interface. |
+| `LocationInGrid`; `IntVec2` | `ItemRotation r`; public `int X`, `int Y` | Actual placement rotation and footprint dimensions. |
+| `EFT.InventoryLogic.FoldableComponent` | public `bool Folded` | Folded children retain occupied footprint but contribute no nested capacity. |
+| `EFT.InventoryLogic.InventoryController` | derives via `PersonItemController` from `ItemController` | Preserve identical profile owner/controller filtering. Live screen coverage still needs testing. |
+| `EFT.UI.DragAndDrop.GridItemView` | public TMP getters `ItemInscription`, `ItemValue` | Reuse font, falling back to `ItemValue`; no font means no overlay and a throttled diagnostic. |
+| `EFT.UI.DragAndDrop.GridItemView` | `TextMeshProUGUI TagName`, `Image _tagColor` (public in the installed 4.1 references) | Retain exact-field reflection for read-only tag visibility/geometry; missing fields retain the ordinary top-left inset with a warning. |
+
+The current pooling fix remains intact: temporary disable hides without
+unregistering, enable requests refresh, and ineligible rebind/destruction
+clears references. Metadata confirms API shape, not native lifecycle coverage;
+stash scrolling, nested windows, ownership, tags, and optional mods remain
+live-game acceptance checks.
+
+## Historical 4.0 reconnaissance
+
+Everything below records the original 4.0 investigation, not 4.1 acceptance.
+
 ## Purpose
 
 These references establish that the required APIs and UI patterns exist. They are **not** authorization to assume that current repository HEAD symbols are identical to the user's SPT 4.0.13 source.

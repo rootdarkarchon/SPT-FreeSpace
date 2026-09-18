@@ -5,7 +5,7 @@ namespace SPTFreeSpace.UI;
 internal static class PlayerOwnership
 {
     internal static bool IsPlayerOwned(
-        TraderControllerClass? bindController,
+        ItemController? bindController,
         IItemOwner? bindOwner)
     {
         if (bindController is not InventoryController ||

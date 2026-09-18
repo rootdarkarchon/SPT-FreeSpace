@@ -1,8 +1,10 @@
 using System;
 using System.Reflection;
+using EFT;
 using EFT.InventoryLogic;
 using EFT.UI;
 using EFT.UI.DragAndDrop;
+using EFT.UI.Insurance;
 using HarmonyLib;
 using SPTFreeSpace.UI;
 
@@ -13,15 +15,15 @@ internal static class GridItemViewBindPatch
     private static readonly Type[] TargetParameterTypes =
     {
         typeof(Item),
-        typeof(ItemContextAbstractClass),
+        typeof(ItemContext),
         typeof(ItemRotation),
-        typeof(TraderControllerClass),
+        typeof(ItemController),
         typeof(IItemOwner),
         typeof(FilterPanel),
-        typeof(global::IContainer),
+        typeof(IContainerView),
         typeof(ItemUiContext),
-        typeof(InsuranceCompanyClass),
-        typeof(GClass2067),
+        typeof(InsuranceCompany),
+        typeof(WishlistManager),
     };
 
     internal static MethodInfo? ResolveTarget()
@@ -42,7 +44,7 @@ internal static class GridItemViewBindPatch
 
     private static void Postfix(
         GridItemView __instance,
-        TraderControllerClass itemController,
+        ItemController itemController,
         IItemOwner itemOwner)
     {
         try

@@ -19,7 +19,7 @@ internal sealed class FreeSpaceOverlay : MonoBehaviour
     private readonly Vector3[] _tagCorners = new Vector3[4];
     private GridItemView? _view;
     private CompoundItem? _container;
-    private TraderControllerClass? _bindController;
+    private ItemController? _bindController;
     private IItemOwner? _bindOwner;
     private CapacityResult? _lastResult;
     private CapacityDisplayMode? _lastDisplayMode;
@@ -38,7 +38,7 @@ internal sealed class FreeSpaceOverlay : MonoBehaviour
     internal void Bind(
         GridItemView view,
         CompoundItem container,
-        TraderControllerClass bindController,
+        ItemController bindController,
         IItemOwner bindOwner)
     {
         HideAndClear();
@@ -229,7 +229,8 @@ internal sealed class FreeSpaceOverlay : MonoBehaviour
 
     private void OnDisable()
     {
-        Plugin.RefreshService?.Unregister(this);
+        // Temporary pool deactivation is not an unbind. Hide immediately, but let
+        // the central service retain this binding until rebind or destruction.
         HideLabelAndInvalidate();
     }
 

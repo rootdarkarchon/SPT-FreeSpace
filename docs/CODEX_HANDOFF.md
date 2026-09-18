@@ -1,5 +1,10 @@
 # Codex Handoff — SPT-FreeSpace
 
+> Historical original 4.0 implementation brief. The approved 4.1 migration and
+> current README, `SOURCE_NOTES.md`, and `STATUS.md` supersede its old version
+> pins, original display defaults, and lifecycle requirements. Preserve the
+> current configuration and scrolling fix when maintaining the 4.1 release.
+
 ## 0. Mission
 
 Implement a small client-only SPT mod named **SPT-FreeSpace** for the user's installed **SPT 4.0.13 / EFT 0.16.9.0.40087** environment.

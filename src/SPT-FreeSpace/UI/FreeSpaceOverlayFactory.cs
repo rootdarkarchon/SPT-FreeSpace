@@ -23,7 +23,7 @@ internal static class FreeSpaceOverlayFactory
     internal static void Bind(
         GridItemView view,
         Item? item,
-        TraderControllerClass? bindController,
+        ItemController? bindController,
         IItemOwner? bindOwner)
     {
         FreeSpaceOverlay? existing = FindExisting(view, out bool hasNamedChild);
@@ -163,7 +163,7 @@ internal static class FreeSpaceOverlayFactory
 
     private static TextMeshProUGUI? GetFontSource(GridItemView view)
     {
-        TextMeshProUGUI? inscription = view.TextMeshProUGUI_0;
+        TextMeshProUGUI? inscription = view.ItemInscription;
         if (inscription != null && inscription.font != null)
         {
             return inscription;

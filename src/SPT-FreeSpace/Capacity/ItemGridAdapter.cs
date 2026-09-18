@@ -24,13 +24,13 @@ internal sealed class ItemGridAdapter : IContainerCapacityAdapter<CompoundItem>
             yield break;
         }
 
-        StashGridClass[]? grids = container.Grids;
+        Grid[]? grids = container.Grids;
         if (grids == null)
         {
             yield break;
         }
 
-        foreach (StashGridClass? grid in grids)
+        foreach (Grid? grid in grids)
         {
             if (grid == null)
             {
@@ -51,13 +51,13 @@ internal sealed class ItemGridAdapter : IContainerCapacityAdapter<CompoundItem>
 
     internal static bool HasGridCapacity(CompoundItem? container)
     {
-        StashGridClass[]? grids = container?.Grids;
+        Grid[]? grids = container?.Grids;
         if (grids == null)
         {
             return false;
         }
 
-        foreach (StashGridClass? grid in grids)
+        foreach (Grid? grid in grids)
         {
             if (grid != null && grid.GridWidth > 0 && grid.GridHeight > 0)
             {
@@ -75,7 +75,7 @@ internal sealed class ItemGridAdapter : IContainerCapacityAdapter<CompoundItem>
     }
 
     private static IEnumerable<CapacityItem<CompoundItem>> EnumerateDirectItems(
-        StashGridClass grid)
+        Grid grid)
     {
         foreach (Item? item in grid.Items)
         {
@@ -96,7 +96,7 @@ internal sealed class ItemGridAdapter : IContainerCapacityAdapter<CompoundItem>
                 continue;
             }
 
-            XYCellSizeStruct size = item.CalculateRotatedSize(location.r);
+            IntVec2 size = item.CalculateRotatedSize(location.r);
             int footprint = CalculateFootprint(size.X, size.Y);
             CompoundItem? child = item as CompoundItem;
             if (!IsEligibleContainer(child))

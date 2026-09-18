@@ -44,10 +44,8 @@ internal sealed class FreeSpaceRefreshService : MonoBehaviour
             return;
         }
 
-        if (_overlays.Add(overlay))
-        {
-            _nextRefresh = 0f;
-        }
+        _overlays.Add(overlay);
+        _nextRefresh = 0f;
     }
 
     internal void Unregister(FreeSpaceOverlay overlay)
@@ -121,7 +119,8 @@ internal sealed class FreeSpaceRefreshService : MonoBehaviour
 
             if (!overlay.isActiveAndEnabled)
             {
-                _overlays.Remove(overlay);
+                // A pooled GridItemView may remain disabled between uses. Keep its
+                // valid binding tracked so activation cannot depend on callback order.
                 continue;
             }
 

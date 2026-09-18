@@ -1,5 +1,9 @@
 # SPT-FreeSpace Feasibility Study
 
+> Historical 4.0 design study. The current target is SPT 4.1.x / EFT 40743.
+> See `SOURCE_NOTES.md`, `STATUS.md`, and the root README for the current
+> verified hook, behavior, version policy, and acceptance status.
+
 ## 1. Executive verdict
 
 **Verdict: highly feasible.**

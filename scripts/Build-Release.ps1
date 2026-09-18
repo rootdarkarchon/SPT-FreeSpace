@@ -8,14 +8,13 @@ param(
     [string] $Configuration = 'Release',
 
     [Parameter()]
-    [string] $Version = '1.0.0'
+    [string] $Version = '1.1.0'
 )
 
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
-$expectedEftFileVersion = '0.16.9.40087'
-$expectedSptAssemblyVersion = [Version] '4.0.13.0'
+$expectedEftFileVersion = '0.16.9.40743'
 $repoRoot = [IO.Path]::GetFullPath((Split-Path -Parent $PSScriptRoot))
 $solution = Join-Path $repoRoot 'SPT-FreeSpace.slnx'
 
@@ -29,7 +28,7 @@ if ($versionParts.Where({ $_ -gt 65534 }, 'First').Count -ne 0) {
 }
 
 if ([string]::IsNullOrWhiteSpace($SptPath)) {
-    throw 'Set -SptPath or SPT_ROOT to the exact SPT 4.0.13 installation.'
+    throw 'Set -SptPath or SPT_ROOT to an SPT 4.1.x / EFT 0.16.9.40743 installation.'
 }
 
 $resolvedSptPath = [IO.Path]::GetFullPath($SptPath)
@@ -50,8 +49,8 @@ if ($eftVersion -ne $expectedEftFileVersion) {
 }
 
 $sptVersion = [Reflection.AssemblyName]::GetAssemblyName($sptCore).Version
-if ($sptVersion -ne $expectedSptAssemblyVersion) {
-    throw "Expected spt-core assembly version $expectedSptAssemblyVersion, found '$sptVersion'."
+if ($sptVersion.Major -ne 4 -or $sptVersion.Minor -ne 1 -or $sptVersion.Build -lt 0) {
+    throw "Expected spt-core assembly version 4.1.x, found '$sptVersion'."
 }
 
 & dotnet build $solution -c $Configuration "-p:SPTPath=$resolvedSptPath" "-p:ModVersion=$Version"
