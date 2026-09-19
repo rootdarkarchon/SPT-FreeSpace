@@ -2,6 +2,12 @@
 
 ## Current 4.1 migration mapping (2026-09-18)
 
+Runtime correction (2026-09-19, version 1.1.1): the game's Mono reports the
+executable `FileVersion` string as `0.16.9.4074`, causing 1.1.0 to disable itself.
+Use `FileVersionInfo.FileMajorPart/FileMinorPart/FileBuildPart/FilePrivatePart`
+and compare all four numeric components against `0.16.9.40743` instead. The
+release script uses the same numeric representation; no prefix acceptance is used.
+
 Supported policy: SPT **4.1.x** with EFT executable file version
 **0.16.9.40743**. Verified build baseline: SPT **4.1.6** at
 `D:\Tarkov-SPT-4.1`. Other 4.1 patches are permitted, not individually tested.

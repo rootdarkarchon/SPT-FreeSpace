@@ -7,7 +7,10 @@ internal static class TargetCompatibility
     internal const string MinimumSptVersion = "4.1.0";
     internal const string EftFileVersion = "0.16.9.40743";
 
-    internal static bool Validate(string? sptVersion, string? eftFileVersion, out string error)
+    internal static bool Validate(
+        string? sptVersion,
+        int eftMajor, int eftMinor, int eftBuild, int eftRevision,
+        out string error)
     {
         if (!Version.TryParse(sptVersion, out Version version) ||
             version.Major != 4 || version.Minor != 1 || version.Build < 0)
@@ -16,11 +19,13 @@ internal static class TargetCompatibility
             return false;
         }
 
-        if (!string.Equals(eftFileVersion, EftFileVersion, StringComparison.Ordinal))
+        // Unity's Mono can truncate FileVersionInfo.FileVersion. Compare the
+        // numeric fixed-file-info fields so the complete build remains required.
+        if (eftMajor != 0 || eftMinor != 16 || eftBuild != 9 || eftRevision != 40743)
         {
             error =
                 $"SPT-FreeSpace disabled: expected EFT executable file version {EftFileVersion}, " +
-                $"found '{eftFileVersion}'.";
+                $"found '{eftMajor}.{eftMinor}.{eftBuild}.{eftRevision}'.";
             return false;
         }
 

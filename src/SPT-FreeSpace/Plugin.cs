@@ -91,8 +91,11 @@ internal sealed class Plugin : BaseUnityPlugin
             return false;
         }
 
-        string executableVersion =
-            FileVersionInfo.GetVersionInfo(BepInEx.Paths.ExecutablePath).FileVersion ?? string.Empty;
-        return TargetCompatibility.Validate(sptCore.Metadata.Version.ToString(), executableVersion, out error);
+        FileVersionInfo executableVersion = FileVersionInfo.GetVersionInfo(BepInEx.Paths.ExecutablePath);
+        return TargetCompatibility.Validate(
+            sptCore.Metadata.Version.ToString(),
+            executableVersion.FileMajorPart, executableVersion.FileMinorPart,
+            executableVersion.FileBuildPart, executableVersion.FilePrivatePart,
+            out error);
     }
 }

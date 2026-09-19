@@ -4,8 +4,37 @@
 
 - SPT: 4.1.x (automated baseline 4.1.6)
 - EFT executable file version: 0.16.9.40743
-- FreeSpace: 1.1.0
+- FreeSpace: 1.1.1
 - State: migration implemented and packaged; live-game acceptance pending. Not deployed or published.
+
+## 1.1.1 — Startup version check fix (2026-09-19)
+
+- Report: container counters missing in the hideout.
+- Confirmed blocker: installed `BepInEx/LogOutput.log` line 1031 shows 1.1.0
+  disabled during startup because the game runtime returned `0.16.9.4074`
+  for the required `0.16.9.40743` executable. No FreeSpace rendering hook was
+  installed; this is not evidence of a hideout-specific ownership/layout defect.
+- Fix: read `FileMajorPart`, `FileMinorPart`, `FileBuildPart`, and
+  `FilePrivatePart`, requiring exactly `0`, `16`, `9`, `40743`. Avoid the
+  truncated `FileVersion` string without accepting a partial build match.
+  Packaging now reads the same numeric fields. UI behavior is unchanged.
+- Installed executable numeric fields independently verified in PowerShell:
+  `0.16.9.40743`. Reading these fields inside the live game still needs restart
+  verification; the original failure was observed in the game log.
+- Build: 0 warnings, 0 errors against SPT 4.1.6. Tests: **50/50 passed**,
+  including wrong/truncated build, other numeric components, missing version
+  fields, and the existing SPT compatibility/capacity regressions.
+- Files changed: plugin startup, compatibility policy/tests, project/release
+  defaults, release version reader, README and validation documentation.
+- Artifact: `artifacts/release/SPT-FreeSpace-1.1.1.zip` and `.zip.sha256`.
+  Sole ZIP entry: `BepInEx/plugins/SPT-FreeSpace/SPT-FreeSpace.dll`.
+- ZIP SHA-256: `33349e4bf830055f9b4272a34be18a6e74db7c40871650e12a10569c1338a935`.
+- Not deployed. Close EFT, install 1.1.1 in the 4.1 client, restart, and verify
+  the `Resolved item-view bind hook` and `SPT-FreeSpace 1.1.1 loaded for SPT ...`
+  lines. Check player-owned containers in stash, hideout inventory, and opened
+  nested windows; scroll them out of view and back. Expect one correct counter
+  per eligible tile. Return warnings/errors and the exact screen if any remain
+  missing. Live rendering and optional-mod acceptance remain pending.
 
 ## 1.1.0 — SPT 4.1 migration (2026-09-18)
 

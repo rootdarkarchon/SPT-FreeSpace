@@ -8,7 +8,7 @@ param(
     [string] $Configuration = 'Release',
 
     [Parameter()]
-    [string] $Version = '1.1.0'
+    [string] $Version = '1.1.1'
 )
 
 $ErrorActionPreference = 'Stop'
@@ -43,7 +43,8 @@ if (-not (Test-Path -LiteralPath $sptCore -PathType Leaf)) {
     throw "spt-core.dll was not found under: $resolvedSptPath"
 }
 
-$eftVersion = [Diagnostics.FileVersionInfo]::GetVersionInfo($eftExecutable).FileVersion
+$eftFileInfo = [Diagnostics.FileVersionInfo]::GetVersionInfo($eftExecutable)
+$eftVersion = '{0}.{1}.{2}.{3}' -f $eftFileInfo.FileMajorPart, $eftFileInfo.FileMinorPart, $eftFileInfo.FileBuildPart, $eftFileInfo.FilePrivatePart
 if ($eftVersion -ne $expectedEftFileVersion) {
     throw "Expected EFT file version $expectedEftFileVersion, found '$eftVersion'."
 }

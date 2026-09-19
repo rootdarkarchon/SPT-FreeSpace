@@ -1,6 +1,6 @@
 # SPT-FreeSpace Manual Test Matrix
 
-Current target: SPT **4.1.x** / EFT **0.16.9.40743**, FreeSpace **1.1.0**.
+Current target: SPT **4.1.x** / EFT **0.16.9.40743**, FreeSpace **1.1.1**.
 Automated baseline: SPT **4.1.6**. All A–H checks remain pending for the
 migrated package; earlier 4.0 evidence does not validate this version.
 
@@ -10,9 +10,15 @@ B7–B13/C8–C9/F7–F8 (live settings), then G6–G7 with a matching Foldables
 release. Run G1/G2/G5 separately with matching 4.1 UI Fixes, MoreCheckmarks,
 and Fika versions, recording the actual versions rather than reusing old ones.
 
-Return the successful `SPT-FreeSpace 1.1.0 loaded for SPT ... / EFT
+Return the successful `SPT-FreeSpace 1.1.1 loaded for SPT ... / EFT
 0.16.9.40743` and `Resolved item-view bind hook` log lines, any FreeSpace
 warnings/errors, and the failed matrix IDs with screenshots if applicable.
+
+For the 1.1.1 startup fix, first verify these load lines after a full restart.
+The 1.1.0 runtime log showed a truncated-version rejection that disabled all
+overlays. Then check containers in stash, hideout inventory, and nested windows
+before assessing any remaining rendering issue. Automated 1.1.1 validation:
+clean build and 50/50 tests; live rendering remains pending.
 
 ## Test setup
 

@@ -5,7 +5,7 @@ SPT-FreeSpace is a small client-only inventory UI mod for:
 - SPT `4.1.x`
 - EFT executable file version `0.16.9.40743`
 
-Version `1.1.0` is built and automatically validated against SPT `4.1.6`.
+Version `1.1.1` is built and automatically validated against SPT `4.1.6`.
 Other 4.1 patch versions are permitted by the version policy but have not been
 individually tested. Live-game validation of this migration is pending.
 
@@ -34,6 +34,10 @@ BepInEx/plugins/SPT-FreeSpace/SPT-FreeSpace.dll
 
 The plugin fails closed with a fatal log message outside SPT 4.1.x / EFT 40743
 or if its exact item-view hook cannot be resolved.
+
+Version 1.1.1 reads the executable's numeric version fields. This fixes a
+startup rejection in 1.1.0 when Unity's Mono reports the shortened version
+string `0.16.9.4074` for build 40743, which prevented all counters from loading.
 
 ## Uninstall
 
@@ -154,7 +158,7 @@ With a matching target installation available:
 ```powershell
 pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\Build-Release.ps1 `
   -SptPath 'D:\Tarkov-SPT-4.1' `
-  -Version '1.1.0'
+  -Version '1.1.1'
 ```
 
 The script validates the target versions, builds with project warnings treated
@@ -163,7 +167,7 @@ its one-file layout, and writes a SHA-256 sidecar.
 
 ## Release versions
 
-The release script's `-Version` argument (default `1.1.0`) accepts a three-part
+The release script's `-Version` argument (default `1.1.1`) accepts a three-part
 version such as `1.2.3` and sets the BepInEx metadata, managed assembly/file
 versions, and ZIP filename. This checkout has no GitHub release workflow;
 tagging alone does not build or publish a release. Proprietary EFT and SPT
